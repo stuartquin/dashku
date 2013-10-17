@@ -1,0 +1,50 @@
+img {
+  margin-top: 10px;
+}
+
+#current-text {
+ margin-top: 12px;
+ font-size:  3em;
+ color:      #999;
+}
+
+#current-values {
+  width: 90%;
+  margin-left: 5%;
+  margin-top:  -2%;
+  color:       #999;
+}
+
+#current-min {
+  text-align: left;
+  float: left;
+}
+
+#current-min .value{
+  color: #ae432e;
+}
+
+#current-max {
+  text-align: right;
+  float: right;
+}
+
+.text {
+  font-size: 0.85em;
+  color:    #666;
+}
+
+#current-max .value {
+  color: #77ab13;
+}
+
+#gauge {
+  margin-top: -30px;
+  margin-left: 10%;
+}
+
+#message {
+  padding-top: 5px;
+  color: #BD0000;
+  font-size: 10pt;
+}

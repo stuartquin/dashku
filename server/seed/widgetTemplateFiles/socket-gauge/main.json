@@ -1,0 +1,13 @@
+{
+  "current": 150,
+  "min": {
+    "value": 65,
+    "text": "Min Per Day"
+  },
+  "max": {
+    "value": 200,
+    "text": "Max Per Day"
+  },
+  "_id": "525ff59b3ae49d752500001c",
+  "apiKey": "d50ee78d-ba9f-4fa4-8510-ae8d0d743c81"
+}
