@@ -60,6 +60,7 @@ window.makeWidgetsResizeable = (widget) ->
     minWidth : 200 
     minHeight : 180 
     grid: [117,107]
+    helper: 'ui-resizable-helper'
     handles: 'se'
     stop: (event, ui) ->
       ss.rpc 'widget.update', dashboardId: Dashboard.selected._id, _id: jQuery(@).attr('data-id'), width: jQuery(@).width(), height: jQuery(@).height(), (response) ->

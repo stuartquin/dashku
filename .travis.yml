@@ -1,0 +1,13 @@
+language: node_js
+node_js:
+  - 0.10
+
+services: 
+  - mongodb
+  - redis-server
+
+before_install:
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+
+script: npm test && npm run-script cuke

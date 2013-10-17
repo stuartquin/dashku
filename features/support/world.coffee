@@ -1,40 +1,35 @@
 selenium              = require 'selenium-launcher'
 soda                  = require 'soda'
 process.env["SS_ENV"] = "cucumber"
+ss                    = require 'socketstream'
 config                = require '../../server/config.coffee'
 app                   = require '../../app.coffee'
 
+browser = null
+
 World = (callback) ->
+
+    @wrap = (funk, cb) ->
+      funk.end (err) ->        
+        if err? then cb.fail err else cb()
+
+    @shouldBeOnThePage = (browser, callback, selector) ->
+      @wrap browser.chain.waitForElementPresent(selector), callback
   
-  selenium (err, selenium) =>
+    if browser is null
+      selenium (err, selenium) =>
+        process.on 'exit', -> selenium.kill()
+ 
+        browser = soda.createClient
+          host:     selenium.host
+          port:     selenium.port
+          url:      config[ss.env].apiHost
+          browser:  "firefox"
 
-    @browser = soda.createClient
-      host:     selenium.host
-      port:     selenium.port
-      url:      config[ss.env].apiHost
-      browser:  "googlechrome"
-
-    callback {@browser}
-    process.on 'exit', -> selenium.kill()
+        @browser  = browser
+        callback {@browser, @wrap, @shouldBeOnThePage}
+    else
+      @browser  = browser
+      callback {@browser, @wrap, @shouldBeOnThePage}
 
 exports.World = World
-
-# *firefox
-# *mock
-# *firefoxproxy
-# *pifirefox
-# *chrome
-# *iexploreproxy
-# *iexplore
-# *firefox3
-# *safariproxy
-# *googlechrome
-# *konqueror
-# *firefox2
-# *safari
-# *piiexplore
-# *firefoxchrome
-# *opera
-# *webdriver
-# *iehta
-# *custom

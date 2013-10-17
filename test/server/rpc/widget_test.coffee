@@ -1,5 +1,12 @@
-assert = require 'assert'
-Gently = require 'gently'
+assert        = require 'assert'
+Gently        = require 'gently'
+ss            = require 'socketstream'
+internals     = require "../../../server/internals"
+
+User          = ss.api.app.models.User
+Dashboard     = ss.api.app.models.Dashboard
+Redis         = ss.api.app.Redis
+ass           = ss.start()
 
 describe "Widget", ->
   

@@ -2,17 +2,25 @@
 # go through all of the tests, and implement
 # logout as an after() cleanup where appropriate
 
-assert  = require "assert"
-Gently  = require "gently"
-uuid    = require 'node-uuid'
-config  = require '../../../server/config.coffee'
+assert        = require "assert"
+Gently        = require "gently"
+uuid          = require 'node-uuid'
+ss            = require "socketstream"
+internals     = require "../../../server/internals"
+config        = require "../../../server/config"
 
+postman       = ss.api.app.helpers.postman
+User          = ss.api.app.models.User
+Dashboard     = ss.api.app.models.Dashboard
+Redis         = ss.api.app.Redis
+
+ass           = ss.start()
 
 describe "Authentication", ->
   
   before (done) ->
-    User.remove {}, (err) ->
-      Dashboard.remove {}, (err) ->
+    User.remove {}, (err) =>
+      Dashboard.remove {}, (err) =>
         done()
 
   describe "#signup", ->
@@ -24,7 +32,7 @@ describe "Authentication", ->
         @res = null
 
         newUserCredentials = 
-          username: "paul" 
+          username: "paul"
           email:    "paul@anephenix.com" 
           password: "123456"
 
@@ -88,7 +96,9 @@ describe "Authentication", ->
 
     describe "if the user is missing some credentials", ->
 
+
       it "should return a failure response", (done) ->
+
         missingUsername = 
           email:    "earthworm@jim.com"
           password: "123456"
@@ -130,7 +140,7 @@ describe "Authentication", ->
     describe "if successful", ->
 
       it "should return a success status, and the user object", (done) ->
-        User.findOne {username: "paul"}, (err, user) ->
+       User.findOne {username: "paul"}, (err, user) ->
           ass.rpc "authentication.login", {identifier: "paul", password: "123456"}, (res) ->
             assert.equal res[0].status, "success"
             assert.equal res[0].user.username, user.username

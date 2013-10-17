@@ -1,7 +1,10 @@
 #### Dashboard rpc module ####
 
+ss                    = require 'socketstream'
 _                     = require 'underscore'
-dashboardController   = require "../controllers/dashboard.coffee"
+dashboardController   = ss.api.app.controllers.dashboard
+Dashboard             = ss.api.app.models.Dashboard
+fetchUserFromSession  = ss.api.app.helpers.fetchUserFromSession
 
 exports.actions = (req, res, ss) ->
 

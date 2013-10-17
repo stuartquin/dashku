@@ -1,5 +1,8 @@
 #### Widget Template RPC module ####
 
+ss             = require 'socketstream'
+WidgetTemplate = ss.api.app.models.WidgetTemplate
+
 exports.actions = (req, res, ss) ->
 
   getAll: ->

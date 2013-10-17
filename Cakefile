@@ -1,29 +1,32 @@
 # Cakefile
-
-loadDependencies = ->
-  env                       = process.env["SS_ENV"] || "development"
-  global.ss                 = require 'socketstream'
-  config                    = require "#{__dirname}/server/config"
-  db                        = require "#{__dirname}/server/db"
-  global.fs                 = require 'fs'
-  global.ass                = ss.start()
-
+ 
 # If you move to a new Redis DB, you may want to run this function
 # to regenerate the API Key database
-regenerateApiKeyDb = ->
-  loadDependencies()
+regenerateApiKeyDb = (cb) ->
+  ss               = require 'socketstream'
+  internals        = require './server/internals'
+  User             = ss.api.app.models.User
+  Redis            = ss.api.app.Redis
   User.find {}, (err, docs) ->
     if !err
-      for doc in docs
-        console.log "we did this"
-        Redis.hset "apiKeys", doc.apiKey, doc._id, redis.print
+      if docs.length > 0
+        for doc in docs
+          Redis.hset "apiKeys", doc.apiKey, doc._id, Redis.print
+          if docs.indexOf doc is docs.length-1
+            cb 0
+      else
+        console.log "There are no users in the database, no need to regenerate the API key database"
+        cb 0
 
 # This populates the WidgetTemplates collection with Widget Templates
-populateWidgetTemplates = ->
-  loadDependencies()
+populateWidgetTemplates = (cb) ->
+  fs                    = require 'fs'
+  ss                    = require 'socketstream'
+  internals             = require './server/internals'
+  WidgetTemplate        = ss.api.app.models.WidgetTemplate
   console.log "Clearing the WidgetTemplates collection"
   WidgetTemplate.remove {}, (err) ->
-    if !err
+    if err is null
       fs.readdir "#{__dirname}/server/seed/widgetTemplates/", (err, files) ->
         if !err and files
           count = 0
@@ -31,12 +34,13 @@ populateWidgetTemplates = ->
             widgetTemplate = new WidgetTemplate require "#{__dirname}/server/seed/widgetTemplates/#{file}"
             widgetTemplate.save (err,doc) -> 
               count++
-              msg = if !err then "WidgetTemplate collection populated" else "There was an error populating the WidgetTemplate collection"
-              console.log msg
-              process.exit 0 if count is files.length-1
+              if err? then console.log "There was an error populating the WidgetTemplate collection"
+              if count is files.length-1
+                console.log "WidgetTemplate collection populated"
+                cb 0
     else
       console.log "There was an error clearing the WidgetTemplates collection"
-      process.exit 1
+      cb 1
 
 # TODO - figure out a way to automate this
 files = [
@@ -48,23 +52,22 @@ files = [
   "server/rpc/widgetTemplate.coffee"
 ]
 
-test = (callback) ->
+test = (cb) ->
   mocha                 = require 'mocha'
   process.env["SS_ENV"] = "test"
-  loadDependencies()
-  app                   = require './app.coffee'
+  ss                    = require 'socketstream'
+  internals             = require './server/internals'
   Mocha = new mocha
   for file in files
     Mocha.addFile "test/#{file.replace('.coffee','_test.coffee')}"
-  Mocha.run ->
-    callback() if callback?
+  Mocha.run (res) ->
+    cb res if cb?
 
 task 'test', 'run unit tests for the project', ->
   test process.exit
 
 task 'regenerateApiKeyDb', 'Compiles the SocketStream assets, and copies them to a fixed path', ->
-  regenerateApiKeyDb()
+  regenerateApiKeyDb process.exit
 
 task 'populateWidgetTemplates', "Populates the database with widget templates", ->
-  populateWidgetTemplates()
-
+  populateWidgetTemplates process.exit

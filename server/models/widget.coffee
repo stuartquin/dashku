@@ -1,4 +1,5 @@
 #### Widget Model ####
+mongoose = require 'mongoose'
 
 defaultHTML = "<!-- This is where your widget's html goes -->\n<img src='images/await.png'>"
 
@@ -34,18 +35,20 @@ defaultJSON = '{
 \n  "message": "Affirmative, Dave. I read you."
 \n}'
 
-global.Widgets = new Schema
-  name                : type: String, default: 'New Widget'
-  html                : type: String, default: defaultHTML
-  css                 : type: String, default: defaultCSS
-  scopedCSS           : type: String, default: ''
-  script              : type: String, default: defaultScript
-  scriptType          : type: String, default: 'javascript'
-  json                : type: String, default: defaultJSON
-  userId              : type: ObjectId
-  width               : type: Number, default: 200
-  height              : type: Number, default: 180
-  widgetTemplateId    : type: ObjectId
-  position            : type: Number
-  createdAt           : type: Date, default: Date.now
-  updatedAt           : type: Date, default: Date.now
+module.exports = (app) ->
+
+  app.schemas.Widgets = new mongoose.Schema
+    name                : type: String, default: 'New Widget'
+    html                : type: String, default: defaultHTML
+    css                 : type: String, default: defaultCSS
+    scopedCSS           : type: String, default: ''
+    script              : type: String, default: defaultScript
+    scriptType          : type: String, default: 'javascript'
+    json                : type: String, default: defaultJSON
+    userId              : type: mongoose.Schema.ObjectId
+    width               : type: Number, default: 200
+    height              : type: Number, default: 180
+    widgetTemplateId    : type: mongoose.Schema.ObjectId
+    position            : type: Number
+    createdAt           : type: Date, default: Date.now
+    updatedAt           : type: Date, default: Date.now

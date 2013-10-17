@@ -16,6 +16,7 @@ These are the JS libraries available for use:
 - [jQuery.knob](http://anthonyterrien.com/knob) (knob-1.1.1.js)
 - [jQuery.Sparklines](http://omnipotent.net/jquery.sparkline/#s-about) (jquery.sparkline.min.js)
 - [NVD3.js](http://novus.github.com/nvd3/) (nv.d3.min.js)
+- [Parse](https://www.parse.com/docs/js_guide) (parse-1.1.16.min.js)
 - [Peity](http://benpickles.github.com/peity) (peity.min.js)      
 - [Raphael](http://raphaeljs.com) (raphael-min.js)
 - [Rickshaw](http://code.shutterstock.com/rickshaw/) (see 'Using Rickshaw' section below)    

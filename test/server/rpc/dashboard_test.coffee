@@ -1,5 +1,17 @@
-assert = require 'assert'
-Gently = require 'gently'
+assert        = require 'assert'
+Gently        = require 'gently'
+ss            = require 'socketstream'
+
+internals     = require "../../../server/internals"
+config        = require "../../../server/config"
+
+postman       = ss.api.app.helpers.postman
+User          = ss.api.app.models.User
+Dashboard     = ss.api.app.models.Dashboard
+Redis         = ss.api.app.Redis
+
+ass           = ss.start()
+
 
 describe "Dashboard", ->
 
@@ -109,8 +121,8 @@ describe "Dashboard", ->
       it "should delete the dashboard, and return a success status along with the deleted dashboard's id", (done) ->
         Dashboard.findOne {}, (err, dashboard) ->
           ass.rpc "dashboard.delete", dashboard._id, (res) ->
-            assert.equal res[0].status, "success"
-            assert.equal res[0].dashboardId, dashboard._id.toString()
+            assert.equal "success", res[0].status
+            assert.equal dashboard._id.toString(), res[0].dashboardId
             Dashboard.findOne {_id: dashboard._id}, (err, dashboardReloaded) ->
               assert.equal dashboardReloaded, null
               done()
@@ -121,7 +133,7 @@ describe "Dashboard", ->
           new Dashboard({userId: user._id, name: "Boom"}).save (err, dashboard) ->
             gently.expect ss.api.publish, 'channel', (channel, event, data) ->
               assert.equal channel, "user_#{user._id}"
-              assert.equal event, "dashboardDeleted"
+              assert.equal "dashboardDeleted", event
               assert.equal data, dashboard._id.toString()
               done()
             ass.rpc "dashboard.delete", dashboard._id, (res) ->
@@ -132,8 +144,8 @@ describe "Dashboard", ->
       it "should return a failure status and explain what went wrong", (done) ->
         Dashboard.findOne {}, (err, dashboard) ->
           ass.rpc "dashboard.delete", dashboard._id, (res) ->
-            assert.equal res[0].status, "failure"
-            assert.equal res[0].reason, "You can't delete your last dashboard"
+            assert.equal "failure", res[0].status
+            assert.equal "You can't delete your last dashboard", res[0].reason
             done()
 
     describe "if not successful because dashboard id does not exist", ->

@@ -14,7 +14,8 @@ module.exports =
         service: "Gmail"
         auth:
           user: "username"
-          pass: "password" 
+          pass: "password"
+    packAssets: {}
   cucumber:
     port: 3001
     db: 'localhost/dashku_cucumber'
@@ -26,6 +27,7 @@ module.exports =
     forgottenPasswordUrl: 'http://localhost:3001/?fptoken='
     mail:
       type: "stub"
+    packAssets: {}
   test:
     port: 3002
     db: 'localhost/dashku_test'
@@ -37,3 +39,4 @@ module.exports =
     forgottenPasswordUrl: 'http://localhost:3002/?fptoken='
     mail:
       type: "stub"
+    packAssets: {}      

@@ -1,4 +1,6 @@
-config                = require './config'
+ss                    = require 'socketstream'
+Dashboard             = ss.api.app.models.Dashboard
+apiUrl                = ss.api.app.config.apiUrl
 
 rubyScript = '### Instructions
 \n#    gem install em-http-request
@@ -15,13 +17,7 @@ rubyScript = '### Instructions
 \n  http.callback {
 \n    EventMachine.stop
 \n  }
-\n}
-\n
-\n# Note - you will notice that the API url is different to the main url.
-\n# I\'ve been experiencing DNS/latency problems with making the API call through
-\n# to the main sitem so I\'ve used this ip address instead. 
-\n#
-\n# Paul Jensen'
+\n}'
 
 nodejsScript = '// Instructions
 \n//    npm install request
@@ -31,13 +27,7 @@ nodejsScript = '// Instructions
 \n
 \nvar data = JSONDATA;
 \n
-\nrequest.post({url: "URL", body: data, json: true});
-\n
-\n// Note - you will notice that the API url is different to the main url.
-\n// I\'ve been experiencing DNS/latency problems with making the API call through
-\n// to the main sitem so I\'ve used this ip address instead. 
-\n//
-\n// Paul Jensen'
+\nrequest.post({url: "URL", body: data, json: true});'
 
 
 coffeeScript = '# Instructions
@@ -48,13 +38,7 @@ coffeeScript = '# Instructions
 \n
 \ndata = JSONDATA;
 \n
-\nrequest.post url: "URL", body: data, json: true
-\n
-\n# Note - you will notice that the API url is different to the main url.
-\n# I\'ve been experiencing DNS/latency problems with making the API call through
-\n# to the main sitem so I\'ve used this ip address instead. 
-\n#
-\n# Paul Jensen'
+\nrequest.post url: "URL", body: data, json: true'
 
 phpScript = '<?
 \n// Instructions
@@ -89,12 +73,6 @@ phpScript = '<?
 \n}
 \n
 \nrestcall("THEURL",\'JSONDATA\');
-\n
-\n// Note - you will notice that the API url is different to the main url.
-\n// I\'ve been experiencing DNS/latency problems with making the API call through
-\n// to the main sitem so I\'ve used this ip address instead. 
-\n//
-\n// Paul Jensen
 \n?>'
 
 pythonScript = '# Instructions
@@ -103,69 +81,47 @@ pythonScript = '# Instructions
 \n# python dashku_WIDGETID.py
 \n#
 \nimport requests
+\nimport json
 \n
-\nrequests.post(\'URL\', JSONDATA)
+\npayload = JSONDATA
+\nheaders = {\'content-type\': \'application/json\'}
 \n
-\n# Note - you will notice that the API url is different to the main url.
-\n# I\'ve been experiencing DNS/latency problems with making the API call through
-\n# to the main sitem so I\'ve used this ip address instead. 
-\n#
-\n# Paul Jensen'
+\nrequests.post(\'URL\', data=json.dumps(payload),headers=headers)'
+
+attributes = 
+  rb:
+    script       : rubyScript
+    contentType  : 'ruby'
+  js:
+    script       : nodejsScript
+    contentType  : 'javascript'
+  coffee:
+    script       : coffeeScript
+    contentType  : 'coffeescript'
+  php:
+    script       : phpScript
+    contentType  : 'php'
+  py:
+    script       : pythonScript
+    contentType  : 'python'    
+
+wrapperFunction = (req,res, fileFormat) ->
+  Dashboard.findOne {_id: req.params.dashboardId}, (err, dashboard) ->
+    if !err and dashboard?
+      widget = dashboard.widgets.id(req.params.id)
+      data = attributes[fileFormat].script.replace(/URL/,apiUrl).replace(/JSONDATA/,widget.json).replace(/WIDGETID/,widget._id)
+      res.writeHead 200, { 'Content-disposition': 'attachment', 'Content-Type': "application/#{attributes[fileFormat].contentType}" }
+      res.end data
+    else
+      res.writeHead 402, { 'Content-Type': 'text/plain' }
+      res.end err
 
 module.exports = (req,res) ->
   parsedFormat = req.params.format.split '.'
   fileFormat   = parsedFormat[parsedFormat.length-1]
-  switch fileFormat
-    when "rb"
-      Dashboard.findOne {_id: req.params.dashboardId}, (err, dashboard) ->
-        if !err and dashboard?
-          widget = dashboard.widgets.id(req.params.id)
-          data = rubyScript.replace(/URL/,config[ss.env].apiUrl).replace(/JSONDATA/,widget.json).replace(/WIDGETID/,widget._id)
-          res.writeHead 200, { 'Content-disposition': 'attachment', 'Content-Type': 'application/ruby' }
-          res.end data
-        else
-          res.writeHead 402, { 'Content-Type': 'text/plain' }
-          res.end err
-    when "js"
-      Dashboard.findOne {_id: req.params.dashboardId}, (err, dashboard) ->
-        if !err and dashboard?
-          widget = dashboard.widgets.id(req.params.id)
-          data = nodejsScript.replace(/URL/,config[ss.env].apiUrl).replace(/JSONDATA/,widget.json).replace(/WIDGETID/,widget._id)
-          res.writeHead 200, {'Content-disposition': 'attachment', 'Content-Type': 'application/javascript' }
-          res.end data
-        else
-          res.writeHead 402, { 'Content-Type': 'text/plain' }
-          res.end err
-    when "coffee"
-      Dashboard.findOne {_id: req.params.dashboardId}, (err, dashboard) ->
-        if !err and dashboard?
-          widget = dashboard.widgets.id(req.params.id)
-          data = coffeeScript.replace(/URL/,config[ss.env].apiUrl).replace(/JSONDATA/,widget.json).replace(/WIDGETID/,widget._id)
-          res.writeHead 200, {'Content-disposition': 'attachment', 'Content-Type': 'application/coffeescript' }
-          res.end data
-        else
-          res.writeHead 402, { 'Content-Type': 'text/plain' }
-          res.end err
-    when "php"
-      Dashboard.findOne {_id: req.params.dashboardId}, (err, dashboard) ->
-        if !err and dashboard?
-          widget = dashboard.widgets.id(req.params.id)
-          data = phpScript.replace(/THEURL/,config[ss.env].apiUrl).replace(/JSONDATA/,widget.json).replace(/WIDGETID/,widget._id)
-          res.writeHead 200, {'Content-disposition': 'attachment', 'Content-Type': 'application/coffeescript' }
-          res.end data
-        else
-          res.writeHead 402, { 'Content-Type': 'text/plain' }
-          res.end err
-    when "py"
-      Dashboard.findOne {_id: req.params.dashboardId}, (err, dashboard) ->
-        if !err and dashboard?
-          widget = dashboard.widgets.id(req.params.id)
-          data = pythonScript.replace(/URL/,config[ss.env].apiUrl).replace(/JSONDATA/,widget.json).replace(/WIDGETID/,widget._id)
-          res.writeHead 200, {'Content-disposition': 'attachment', 'Content-Type': 'application/python' }
-          res.end data
-        else
-          res.writeHead 402, { 'Content-Type': 'text/plain' }
-          res.end err
-    else
-      res.writeHead 402, { 'Content-Type': 'text/plain' }
-      res.end "not identified"
+
+  if attributes[fileFormat] is undefined
+    res.writeHead 402, { 'Content-Type': 'text/plain' }
+    res.end "not identified"
+  else
+    wrapperFunction req, res, fileFormat

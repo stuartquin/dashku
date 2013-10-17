@@ -1,19 +1,17 @@
 # npm modules
-global.mongoose   = require 'mongoose'
-global.redis      = require 'redis'
-config            = require './config.coffee'
+mongoose   = require 'mongoose'
+redis      = require 'redis'
+ss         = require 'socketstream'
 
+module.exports = (app) ->
 
-# Redis-related configuration
-global.Redis = redis.createClient config[ss.env].redis.port, config[ss.env].redis.host
-Redis.auth(config[ss.env].redis.pass) if ss.env is 'production'
-
-# MongoDB-related configuration
-mongoose.connect "mongodb://#{config[ss.env].db}"
-global.Schema   = mongoose.Schema
-global.ObjectId = Schema.ObjectId
-
-require "#{__dirname}/models/user.coffee"
-require "#{__dirname}/models/widget.coffee"
-require "#{__dirname}/models/dashboard.coffee"
-require "#{__dirname}/models/widgetTemplate.coffee"
+  # Redis-related configuration
+  app.Redis = redis.createClient app.config.redis.port, app.config.redis.host
+  app.Redis.auth(app.config.redis.pass) if ss.env is 'production'
+  
+  # MongoDB-related configuration
+  mongoose.connect "mongodb://#{app.config.db}"
+  require("#{__dirname}/models/user.coffee") app
+  require("#{__dirname}/models/widget.coffee") app
+  require("#{__dirname}/models/dashboard.coffee") app
+  require("#{__dirname}/models/widgetTemplate.coffee") app

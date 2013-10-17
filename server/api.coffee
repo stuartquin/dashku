@@ -1,6 +1,8 @@
 # Controllers, a way of sharing common logic between RPC and REST APIs
-dashboardController  = require "./controllers/dashboard.coffee"
-widgetController     = require "./controllers/widget.coffee"
+ss                   = require 'socketstream'
+dashboardController  = ss.api.app.controllers.dashboard
+widgetController     = ss.api.app.controllers.widget
+Redis                = ss.api.app.Redis
 
 #### The Dashku REST API #### 
 

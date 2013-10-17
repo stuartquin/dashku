@@ -1,9 +1,14 @@
 #### Authentication RPC module ####
 
-bcrypt     = require 'bcrypt'
-uuid       = require 'node-uuid'
-config     = require '../config.coffee'
-
+ss                    = require 'socketstream'
+bcrypt                = require 'bcrypt'
+uuid                  = require 'node-uuid'
+User                  = ss.api.app.models.User
+Dashboard             = ss.api.app.models.Dashboard
+Redis                 = ss.api.app.Redis
+config                = ss.api.app.config
+fetchUserFromSession  = ss.api.app.helpers.fetchUserFromSession
+postman               = ss.api.app.helpers.postman
 
 forgottenPasswordEmailText = (link) -> "Hi,
 \n
@@ -112,7 +117,7 @@ exports.actions = (req, res, ss) ->
         user.changePasswordToken = uuid.v4()
         user.save (err) ->
           if !err
-            link = config[ss.env].forgottenPasswordUrl + user.changePasswordToken
+            link = config.forgottenPasswordUrl + user.changePasswordToken
             res status: 'success'
             mailOptions =
               from: "Dashku Admin <admin@dashku.com>"

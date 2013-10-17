@@ -1,12 +1,9 @@
 fs                = require "fs"
-widgetController  = require "../../server/controllers/widget.coffee"
-
-wrap = (funk, cb) ->
-  funk.end (err) ->
-    if err?
-      cb.fail err
-    else
-      cb()
+ss                = require 'socketstream'
+User              = ss.api.app.models.User 
+Dashboard         = ss.api.app.models.Dashboard
+WidgetTemplate    = ss.api.app.models.WidgetTemplate
+widgetController  = ss.api.app.controllers.widget
 
 detectModal = (name, cb) ->
   character = switch name
@@ -26,6 +23,7 @@ detectButton = (name, cb) ->
     when "big number"             then "//div[@class=\"name\" and contains(text(),'Big Number')]"
     when "delete widget"          then "//div[@class=\"delete\" and @title=\"delete widget\"]"
     when "edit widget"            then "//div[@class=\"edit\" and @title=\"edit widget\"]"
+    when "edit style"             then "//a[@id=\"styleDashboard\"]"
     when "close editor"           then "//a[@class=\"close\"]"
     when "test load"              then "//li[@id=\"load\"]"
     when "test transmission"      then "//li[@id=\"transmit\"]"
@@ -56,33 +54,34 @@ module.exports = ->
               callback.fail err
   
   @After (callback) ->
-    wrap @browser.chain.close(), callback
+    @wrap @browser.chain.testComplete(), callback
 
   @Given /^I am on the homepage$/, (callback) ->
-    wrap @browser.chain.session().open('/'), callback
+    @wrap @browser.chain.session().open('/'), callback
 
   @Given /^I follow "([^"]*)"$/, (link, callback) ->
-    wrap @browser.chain.waitForElementPresent("link=#{link}").click("link=#{link}"), callback
+    @wrap @browser.chain.waitForElementPresent("link=#{link}").click("link=#{link}"), callback
 
   @Given /^I fill in "([^"]*)" with "([^"]*)"$/, (field, value, callback) ->
-    wrap @browser.chain.fireEvent("//input[@name=\"#{field}\"]",'focus').type("//input[@name=\"#{field}\"]", value).fireEvent("//input[@name=\"#{field}\"]",'keyup').fireEvent("//input[@name=\"#{field}\"]",'blur'), callback
+    element = "//input[@name=\"#{field}\"]"
+    @wrap @browser.chain.waitForElementPresent(element).fireEvent(element,'focus').type(element, value).fireEvent(element,'keyup').fireEvent(element,'blur'), callback
 
   @Given /^I press "([^"]*)"$/, (button, callback) ->
-    wrap @browser.chain.fireEvent('//button[@type="submit"]','focus').click('//button[@type="submit"]'), callback
+    element = "//button[text()=\"#{button}\"]"
+    @wrap @browser.chain.waitForElementPresent(element).fireEvent(element,'focus').click(element), callback
 
   # TODO - standardize on the use of either # or . for the login and signup modal css classes
-
   @Given /^the "([^"]*)" modal should appear$/, (name, callback) ->
     detectModal name, (character) =>
-      wrap @browser.chain.waitForElementPresent("css=#{character}"), callback
+      @wrap @browser.chain.waitForElementPresent("css=#{character}"), callback
 
   @Given /^the "([^"]*)" modal should disappear$/, (name, callback) ->
     detectModal name, (character) =>
-      wrap @browser.chain.waitForElementNotPresent("css=#{character}"), callback
+      @wrap @browser.chain.waitForElementNotPresent("css=#{character}"), callback
 
   @Given /^the "([^"]*)" modal should not disappear$/, (name, callback) ->
     character = if name is "login" then "#loginModal" else ".signupModal"  
-    wrap @browser.chain.waitForElementPresent("css=#{character}"), callback
+    @wrap @browser.chain.waitForElementPresent("css=#{character}"), callback
 
   @Given /^there should be a user with username "([^"]*)"$/, (username, callback) ->
     User.find {username}, (err, docs) ->
@@ -91,19 +90,17 @@ module.exports = ->
       else
         callback.fail "Expected there to be 1 user record with username #{username}, but found #{docs.length}"
 
-  # TODO - refactor these 3 common step definitions
-
   @Given /^I should be on the dashboard page$/, (callback) ->
-    wrap @browser.chain.waitForElementPresent('css=.dashboard'), callback
+    @shouldBeOnThePage @browser, callback, 'css=.dashboard'
 
   @Given /^I should be on the home page$/, (callback) ->
-    wrap @browser.chain.waitForElementPresent('css=.homepage'), callback
+    @shouldBeOnThePage @browser, callback, 'css=.homepage'
 
   @Given /^I should be on the account page$/, (callback) ->
-    wrap @browser.chain.waitForElementPresent('css=.account'), callback
+    @shouldBeOnThePage @browser, callback, 'css=.account'
 
   @Given /^I reload the page$/, (callback) ->
-    wrap @browser.chain.refresh(), callback
+    @wrap @browser.chain.refresh(), callback
 
   @Given /^pending$/, (callback) ->
     callback.pending()
@@ -127,34 +124,46 @@ module.exports = ->
           callback()
 
   @Then /^the field "([^"]*)" should be "([^"]*)"$/, (field, value, callback) ->
-    wrap @browser.chain.assertValue("//input[@name=\"#{field}\"]", value), callback
+    @wrap @browser.chain.assertValue("//input[@name=\"#{field}\"]", value), callback
 
   @Then /^the field "([^"]*)" placeholder should be "([^"]*)"$/, (field, placeholder, callback) ->
-    wrap @browser.chain.assertAttribute("//input[@name=\"#{field}\"]@placeholder", placeholder), callback
+    @wrap @browser.chain.waitForAttribute("//input[@name=\"#{field}\"]@placeholder", placeholder), callback
 
   @Then /^I wait for a few seconds$/, (callback) ->
     setTimeout ->
       callback()
     , 2000
 
+  @Given /^I wait for (\d+) seconds$/, (seconds, callback) ->
+    setTimeout ->
+      callback()
+    , seconds * 1000
+
+  @Given /^I wait for (\d+) seconds for Travis CI$/, (seconds, callback) ->
+    setTimeout ->
+      callback()
+    , seconds * 1000
+
   @Then /^there should not be a user with username "([^"]*)"$/, (username, callback) ->
-    User.find {username}, (err, docs) ->
-      if docs.length is 0
+    User.count {username}, (err, count) ->
+      if count is 0
         callback()
       else
         callback.fail "There shouldn't be a user with username #{username}"
 
   @Given /^I click on the "([^"]*)" menu item$/, (item, callback) ->
-    wrap @browser.chain.click("//span[contains(text(),'#{item}')]"), callback    
+    element = "//span[contains(text(),'#{item}')]"
+    @wrap @browser.chain.waitForElementPresent(element).click(element), callback    
 
   @Then /^I should see "([^"]*)"$/, (content, callback) ->
-    wrap @browser.chain.assertTextPresent(content), callback 
+    @wrap @browser.chain.assertTextPresent(content), callback 
 
   @Then /^there should be an "([^"]*)" item in the Dashboards menu list$/, (item, callback) ->
-    wrap @browser.chain.assertElementPresent("//span[contains(text(),'#{item}')]"), callback
+    @wrap @browser.chain.assertElementPresent("//span[contains(text(),'#{item}')]"), callback
 
   @Given /^I type "([^"]*)" into "([^"]*)"$/, (newText, oldText, callback) ->
-    wrap @browser.chain.focus("//h1[contains(text(),'#{oldText}')]").type("//h1[contains(text(),'#{oldText}')]", "#{newText}\\13"), callback
+    element = "//h1[contains(text(),'#{oldText}')]"
+    @wrap @browser.chain.focus(element).type(element, "#{newText}\\13"), callback
 
   @Given /^I press the Enter key$/, (callback) ->
     callback.pending()
@@ -163,13 +172,14 @@ module.exports = ->
     callback.pending()
 
   @Given /^I click on the resize icon$/, (callback) ->
-    wrap @browser.chain.click("//a[@id=\"screenWidth\"]"), callback
+    element = "//a[@id=\"screenWidth\"]"
+    @wrap @browser.chain.waitForElementPresent(element).click(element), callback
 
   @Given /^the dashboard should be fluid length$/, (callback) ->
-    wrap @browser.chain.waitForElementPresent('css=.row-fluid'), callback
+    @wrap @browser.chain.waitForElementPresent('css=.row-fluid'), callback
 
   @Given /^the dashboard should be fixed length$/, (callback) ->
-    wrap @browser.chain.waitForElementPresent('css=.row'), callback
+    @wrap @browser.chain.waitForElementPresent('css=.row'), callback
 
   @Given /^the dashboard with name "([^"]*)" should have a size of "([^"]*)"$/, (name, screenWidth, callback) ->
     Dashboard.findOne {name, screenWidth}, (err, dashboard) ->
@@ -182,41 +192,33 @@ module.exports = ->
           callback()
 
   @Then /^I click on the delete dashboard button$/, (callback) ->
-    wrap @browser.chain.click("//a[@id=\"deleteDashboard\"]"), callback
+    @wrap @browser.chain.click("//a[@id=\"deleteDashboard\"]"), callback
 
   @Then /^I will confirm the dialog box$/, (callback) ->
-    wrap @browser.chain.chooseOkOnNextConfirmation(), callback
+    @wrap @browser.chain.chooseOkOnNextConfirmation(), callback
 
   @Then /^I intercept the dialog$/, (callback) ->
-    wrap @browser.chain.getConfirmation(), callback
+    @wrap @browser.chain.getConfirmation(), callback
 
   @Then /^there should not be a dashboard with the name "([^"]*)"$/, (name, callback) ->
-    Dashboard.find {name}, (err, dashboards) ->
-      if err?
-        callback.fail err
+    Dashboard.count {name}, (err, count) ->
+      if err? or count isnt 0
+        callback.fail if err? then err else new Error "A Dashboard was found with name: #{name}, where none was expected"
       else
-        if dashboards.length is 0
-          callback()
-        else
-          callback.fail "No dashboard found with name: #{name} and screenWidth: #{screenWidth}"
-
-  # TODO - refactor these 2 steps with logic to match the passed name to the selector
-
-  @When /^I click on the edit style button$/, (callback) ->
-    wrap @browser.chain.click("//a[@id=\"styleDashboard\"]"), callback
+        callback()
 
   @Given /^I click on the "([^"]*)" button$/, (name, callback) ->
     detectButton name, (selector) =>
-      wrap @browser.chain.waitForElementPresent(selector).click(selector), callback
+      @wrap @browser.chain.waitForElementPresent(selector).click(selector), callback
 
   @When /^I change the dashboard background colour to dark grey$/, (callback) ->
-    wrap @browser.chain.focus("//textarea").type("//textarea", "\n\nbody {background:#111;}"), callback
+    @wrap @browser.chain.focus("//textarea").type("//textarea", "\n\nbody {background:#111;}"), callback
 
   @Then /^the dashboard background should be dark grey$/, (callback) ->
-    wrap @browser.chain.assertElementPresent("//style[@id=\"dashboardStyle\" and contains(text(), 'body {background:#111;}')]"), callback
+    @wrap @browser.chain.assertElementPresent("//style[@id=\"dashboardStyle\" and contains(text(), 'body {background:#111;}')]"), callback
 
   @When /^I close the style editor$/, (callback) ->
-    wrap @browser.chain.click("//a[@class=\"close\"]"), callback
+    @wrap @browser.chain.click("//a[@class=\"close\"]"), callback
 
   @Then /^the dashboard with name "([^"]*)" should have css with a background of dark grey$/, (name, callback) ->
     Dashboard.find {name}, (err, dashboards) ->
@@ -231,7 +233,7 @@ module.exports = ->
           callback.fail "The dashboard does not have that style"
 
   @Then /^I should see (\d+) widget on the page$/, (numberOfWidgets, callback) ->
-    wrap @browser.chain.verifyElementPresent("//div[@class=\"widget\"]"), callback
+    @wrap @browser.chain.verifyElementPresent("//div[@class=\"widget\"]"), callback
 
   @Then /^the dashboard with name "([^"]*)" should have a widget with name "([^"]*)"$/, (name, widgetName, callback) ->
     Dashboard.findOne {name}, (err, dashboard) ->
@@ -244,7 +246,7 @@ module.exports = ->
           callback.fail "No dashboard found with name: #{name} and a widget with name: #{widgetName}"
 
   @Given /^I should see (\d+) widgets on the page$/, (numberOfWidgets, callback) ->
-    wrap @browser.chain.verifyElementNotPresent("//div[@class=\"widget\"]"), callback
+    @wrap @browser.chain.verifyElementNotPresent("//div[@class=\"widget\"]"), callback
 
   @Given /^the dashboard with name "([^"]*)" should not have any widgets$/, (name, callback) ->
     Dashboard.findOne {name}, (err, dashboard) ->
@@ -273,7 +275,7 @@ module.exports = ->
                 callback.fail res.reason
 
   @Given /^I drag the widget resize handle (\d+) pixels right and (\d+) pixels down$/, (pixelsRight, pixelsDown, callback) ->
-    wrap @browser.chain.dragAndDrop("//div[@class=\"ui-resizable-handle ui-resizable-se ui-icon ui-icon-gripsmall-diagonal-se\"]","+#{pixelsRight},+#{pixelsDown}"), callback
+    @wrap @browser.chain.dragAndDrop("//div[@class=\"ui-resizable-handle ui-resizable-se ui-icon ui-icon-gripsmall-diagonal-se\"]","+#{pixelsRight},+#{pixelsDown}"), callback
 
   @Given /^the widget for dashboard "([^"]*)" should have a width of (\d+) pixels, and a height of (\d+) pixels$/, (name, width, height, callback) ->
     Dashboard.findOne {name}, (err, dashboard) ->
@@ -287,14 +289,16 @@ module.exports = ->
           callback.fail "The widget's width and height were supposed to be #{width}x#{height}, but were #{widget.width}x#{widget.height}"
 
   @Given /^I click on the "([^"]*)" tab$/, (tabName, callback) ->
-    wrap @browser.chain.click("//li[@id=\"#{tabName}\"]"), callback
+    @wrap @browser.chain.click("//li[@id=\"#{tabName}\"]"), callback
 
   @Given /^I type "([^"]*)" into the editor$/, (html, callback) ->
-    wrap @browser.chain.focus("//textarea").type("//textarea",html), callback
+    @wrap @browser.chain.focus("//textarea").type("//textarea",html), callback
 
   @Given /^I type some json into the editor$/, (callback) ->
     json  = "{\"version\":\"2\"}"
-    wrap @browser.chain.focus("//textarea").type("//textarea",json), callback
+    @wrap @browser.chain.focus("//textarea").type("//textarea",json), callback
+
+  # TODO - refactor the 3 following steps, the logic is the same, variables change
 
   @Given /^the widget for dashboard "([^"]*)" should have the html "([^"]*)"$/, (name, html, callback) ->
     Dashboard.findOne {name}, (err, dashboard) ->
@@ -330,7 +334,7 @@ module.exports = ->
           callback.fail "The widget's script was supposed to include #{script}, but is #{widget.script}"
 
   @Given /^I clear the editor$/, (callback) ->
-    wrap @browser.chain.getEval("window.editor2.editor.setValue('');"), callback
+    @wrap @browser.chain.getEval("window.editor2.editor.setValue('');"), callback
 
   @Given /^the widget for dashboard "([^"]*)" should have a JSON payload which contains that json$/, (name, callback) ->
     Dashboard.findOne {name}, (err, dashboard) ->
@@ -348,7 +352,7 @@ module.exports = ->
     Dashboard.findOne {}, (err, dashboard) =>
       for widget in dashboard.widgets
         if widget.name is element
-          wrap @browser.chain.dragAndDrop("//div[@class=\"content\"]","+#{pixelsRight},+0"), callback
+          @wrap @browser.chain.dragAndDrop("//div[@class=\"content\"]","+#{pixelsRight},+0"), callback
 
   @Then /^widget with name "([^"]*)" should have a position of "([^"]*)"$/, (name, position, callback) ->
     Dashboard.findOne {}, (err, dashboard) =>
@@ -360,7 +364,7 @@ module.exports = ->
             callback.fail "The widget with name #{name} should have a position of #{position}, but has a position of #{widget.position}"
 
   @Given /^the script tab should say "([^"]*)"$/, (text, callback) ->
-    wrap @browser.chain.assertElementPresent("//li[@id=\"script\" and contains(text(),'#{text}')]"), callback
+    @wrap @browser.chain.assertElementPresent("//li[@id=\"script\" and contains(text(),'#{text}')]"), callback
 
   @Given /^I type in some coffeescript for the widget$/, (callback) ->
     # type some CoffeeScript into the editor's textarea
@@ -371,7 +375,7 @@ module.exports = ->
 \n@on 'transmission', (data) =>
 \n  message = @widget.find '#message'
 \n  message.text(data.message).hide().fadeIn()"
-    wrap @browser.chain.focus("//textarea").type("//textarea",coffeescript), callback
+    @wrap @browser.chain.focus("//textarea").type("//textarea",coffeescript), callback
 
   @Then /^The widget for dashboard "([^"]*)" should have the coffeescript as its script$/, (name, callback) ->
     coffeescript = "
@@ -403,10 +407,10 @@ module.exports = ->
 \n@on 'transmission', (data) =>
 \n  message = @widget.find '#message'
 \n  message.text(data.version)"
-    wrap @browser.chain.focus("//textarea").type("//textarea",coffeescript), callback
+    @wrap @browser.chain.focus("//textarea").type("//textarea",coffeescript), callback
 
   @Given /^the widget on the page should contain "([^"]*)" in its html$/, (content, callback) ->
-    wrap @browser.chain.assertElementPresent("//div[@id=\"message\" and contains(text(),'#{content}')]"), callback
+    @wrap @browser.chain.assertElementPresent("//div[@id=\"message\" and contains(text(),'#{content}')]"), callback
 
   @Given /^I type some special javascript into the editor$/, (callback) ->
     specialJavascript = "
@@ -434,11 +438,11 @@ module.exports = ->
 \n
 \n  })
 \n}.call(this))"
-    wrap @browser.chain.focus("//textarea").type("//textarea",specialJavascript), callback
+    @wrap @browser.chain.focus("//textarea").type("//textarea",specialJavascript), callback
 
   @Given /^I type some special json into the editor$/, (callback) ->
     json  = "{\"data\":\"4\"}"
-    wrap @browser.chain.focus("//textarea").type("//textarea",json), callback
+    @wrap @browser.chain.focus("//textarea").type("//textarea",json), callback
 
   @Given /^the special widget on the page should contain "([^"]*)" in its html$/, (content, callback) ->
-    wrap @browser.chain.assertElementPresent("//div[@class=\"content\" and contains(text(),'#{content}')]"), callback
+    @wrap @browser.chain.assertElementPresent("//div[@class=\"content\" and contains(text(),'#{content}')]"), callback

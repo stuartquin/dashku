@@ -1,20 +1,24 @@
-assert  = require "assert"
+ss        = require "socketstream"
+assert    = require "assert"
+internals = require "../../../server/internals" 
+
+User = ss.api.app.models.User
 
 describe "User", ->
 
-  before (done) ->
-    User.remove {}, (err) ->
-      done()
-
   describe "new", ->
 
-    it "should encrypt the password", (done) ->
+    before (done) ->
+      User.remove {}, (err) ->
+        done()
 
-      username  = "paulbjensen"
-      email     = "paul@anephenix.com"
-      password  = "123456"
-      user = new User {username, email, password}
-      user.save (err, doc) ->
+    it "should encrypt the password", (done) ->
+      userCredentials = 
+        username: "paulbjensen"
+        email:    "paul@anephenix.com"
+        password: "123456"
+
+      new User(userCredentials).save (err, doc) ->
         assert.equal doc.password         , undefined
         assert.notEqual doc.passwordHash  , undefined
         assert.notEqual doc.passwordSalt  , undefined
@@ -24,18 +28,27 @@ describe "User", ->
 
     describe "username", ->
 
-      it "should be unique", (done) ->
-        
-        userCredentials = 
-          username: "paulbjensen"
-          email:    "bob@bob.com"
-          password: "123456"
+      beforeEach (done) ->
+        User.remove {}, (err) ->
+          userCredentials = 
+            username: "paulbjensen"
+            email:    "paul@anephenix.com"
+            password: "123456"
+          new User(userCredentials).save (err, doc) ->
+            assert.equal err, null
+            done()      
 
-        new User(userCredentials).save (err, doc) ->
-          assert.notEqual err, null
-          User.count (err, count) ->
-            assert.equal count, 1
-            done()
+      it "should be unique", (done) ->
+          userCredentials = 
+            username: "paulbjensen"
+            email:    "bob@bob.com"
+            password: "123456"
+
+          new User(userCredentials).save (err, doc) ->
+            assert.notEqual err, null
+            User.count (err, count) ->
+              assert.equal count, 1
+              done()
 
       it "should be present", (done) ->
         userCredentials = 
@@ -47,6 +60,15 @@ describe "User", ->
           done()
 
     describe "email", ->
+
+      beforeEach (done) ->
+        User.remove {}, (err) ->
+          username  = "paulbjensen"
+          email     = "paul@anephenix.com"
+          password  = "123456"
+          user = new User {username, email, password}
+          user.save (err, doc) ->
+            done()
 
       it "should be unique", (done) ->
 

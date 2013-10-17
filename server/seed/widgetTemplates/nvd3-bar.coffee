@@ -1,7 +1,11 @@
-module.exports =
-  name: 'NVD3 bar'
-  json: '{ "data": {"Stream0": 2,"Stream1": 4,"Stream2": 6} }'
-  script: '(function () {\n  // Adapted from http://nvd3.com/ghpages/multiBar.html\n  var widget = this.widget.get(0)\n    , self = this\n\n  self.on(\'load\', function () {\n    head.js(\'javascripts/d3.v2.min.js\'\n      , \'javascripts/nv.d3.min.js\'\n      )\n    head.ready(function () {\n      d3.select(widget).append(\'svg\')\n      var data = exampleData()\n        , svg = self.widget.selector + \' svg\'\n\n      var graph = nv.addGraph(function() {\n        var chart = nv.models.multiBarChart();\n\n        chart.xAxis\n          .tickFormat(d3.format(\',f\'));\n\n        chart.yAxis\n          .tickFormat(d3.format(\',.1f\'));\n\n        d3.select(svg)\n          .datum(data)\n          .transition().duration(500).call(chart);\n\n        nv.utils.windowResize(chart.update);\n\n        self.on(\'transmission\', function (rec) {\n          Object.keys(rec.data).map(function (key) {\n            if (key === \'Stream0\') data[0].values.push(\n              { series: 0\n              , x: data[0].values.length\n              , y: rec.data[key]\n              })\n            if (key === \'Stream1\') data[1].values.push(\n              { series: 1\n              , x: data[1].values.length\n              , y: rec.data[key]\n              })\n            if (key === \'Stream2\') data[2].values.push(\n              { series: 2\n              , x: data[2].values.length\n              , y: rec.data[key]\n              })\n          })\n          chart.update()\n        })\n\n        return chart;\n      });\n\n      // Code for example data.\n\n      function stream_layers(n, m, o) {\n        if (arguments.length < 3) o = 0;\n        function bump(a) {\n          var x = 1 / (.1 + Math.random()),\n              y = 2 * Math.random() - .5,\n              z = 10 / (.1 + Math.random());\n          for (var i = 0; i < m; i++) {\n            var w = (i / m - y) * z;\n            a[i] += x * Math.exp(-w * w);\n          }\n        }\n        return d3.range(n).map(function() {\n            var a = [], i;\n            for (i = 0; i < m; i++) a[i] = o + o * Math.random();\n            for (i = 0; i < 5; i++) bump(a);\n            return a.map(stream_index);\n          });\n      }\n\n      function stream_index(d, i) {\n        return {x: i, y: Math.max(0, d)};\n      }\n\n      function exampleData() {\n        return stream_layers(3,10+Math.random()*100,.1).map(function(data, i) {\n          return {\n            key: \'Stream\' + i,\n            values: data\n          };\n        });\n      }\n\n    })\n  })\n}.call(this))\n'
-  css: '{\n  background-color: white;\n}\n\n.header {\n  color: black;\n}\n\nsvg {\n  font: 10px sans-serif;\n}\n'
-  html: ''
-  snapshotUrl: "/images/widgetTemplates/nvd3Bar.png"
+fs              = require 'fs'
+folderPath      = "#{__dirname}/../widgetTemplateFiles/nvd3-bar"
+
+name            = 'NVD3 bar'
+json            = fs.readFileSync "#{folderPath}/main.json"
+script          = fs.readFileSync "#{folderPath}/main.js"
+css             = fs.readFileSync "#{folderPath}/main.css"
+html            = ''
+snapshotUrl     = "/images/widgetTemplates/nvd3Bar.png"
+
+module.exports  = {name, json, script, css, html, snapshotUrl}

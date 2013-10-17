@@ -3,16 +3,18 @@ Feature: Dashboards
   As a user
   I want to create, modify, and delete dashboards
 
-  Scenario: Create a Dashboard
-    Given a user exists with username "paulbjensen" and email "paulbjensen@gmail.com" and password "123456"
+  Background:
+    Given a user exists with username "paulbjensen" and email "paulbjensen@gmail.com" and password "123456789"
     And a dashboard exists with name "Your Dashboard" for user "paulbjensen"
     And I am on the homepage
     And I follow "Login"
     And the "login" modal should appear
     And I fill in "identifier" with "paulbjensen@gmail.com"
-    And I fill in "password" with "123456"
+    And I fill in "password" with "123456789"
     And I press "Login"
-    And I wait for a few seconds
+    And I wait for 3 seconds  
+
+  Scenario: Create a Dashboard
     And I click on the "Dashboards" menu item
     And I click on the "New Dashboard" menu item
     And I wait for a few seconds
@@ -25,17 +27,7 @@ Feature: Dashboards
     And there should be an "Account Sales" item in the Dashboards menu list
 
   Scenario: Rename a Dashboard
-    Given a user exists with username "paulbjensen" and email "paulbjensen@gmail.com" and password "123456"
-    And a dashboard exists with name "Your Dashboard" for user "paulbjensen"
-    And I am on the homepage
     Given pending
-    # We need to figure out how to fill in the contenteditable field and press the enter key without losing focus
-    And I follow "Login"
-    And the "login" modal should appear
-    And I fill in "identifier" with "paulbjensen@gmail.com"
-    And I fill in "password" with "123456"
-    And I press "Login"
-    And I wait for a few seconds
     And I type "Server Monitor" into "Your Dashboard"
     And I wait for a few seconds
     And I should see "Server Monitor"
@@ -43,32 +35,15 @@ Feature: Dashboards
     And there should be a dashboard with the name "Server Monitor"
 
   Scenario: Resize the Dashboard
-    Given a user exists with username "paulbjensen" and email "paulbjensen@gmail.com" and password "123456"
-    And a dashboard exists with name "Your Dashboard" for user "paulbjensen"
-    And I am on the homepage
-    And I follow "Login"
-    And the "login" modal should appear
-    And I fill in "identifier" with "paulbjensen@gmail.com"
-    And I fill in "password" with "123456"
-    And I press "Login"
-    And I wait for a few seconds
     And I click on the resize icon
     And the dashboard should be fluid length
     And the dashboard with name "Your Dashboard" should have a size of "fluid"
     And I click on the resize icon
+    And I wait for 2 seconds
     And the dashboard should be fixed length
     And the dashboard with name "Your Dashboard" should have a size of "fixed"
-
+  
   Scenario: Delete the Dashboard
-    Given a user exists with username "paulbjensen" and email "paulbjensen@gmail.com" and password "123456"
-    And a dashboard exists with name "Your Dashboard" for user "paulbjensen"
-    And I am on the homepage
-    And I follow "Login"
-    And the "login" modal should appear
-    And I fill in "identifier" with "paulbjensen@gmail.com"
-    And I fill in "password" with "123456"
-    And I press "Login"
-    And I wait for a few seconds
     And I click on the "Dashboards" menu item
     And I click on the "New Dashboard" menu item
     And I wait for a few seconds
@@ -88,21 +63,23 @@ Feature: Dashboards
     And I should see "Account Sales"
     And there should not be a dashboard with the name "Your Dashboard"
  
-  @wip
   Scenario: Restyle the Dashboard
-    Given a user exists with username "paulbjensen" and email "paulbjensen@gmail.com" and password "123456"
-    And a dashboard exists with name "Your Dashboard" for user "paulbjensen"
-    And I am on the homepage
-    And I follow "Login"
-    And the "login" modal should appear
-    And I fill in "identifier" with "paulbjensen@gmail.com"
-    And I fill in "password" with "123456"
-    And I press "Login"
-    And I wait for a few seconds
-    When I click on the edit style button
+    When I click on the "edit style" button
     And I change the dashboard background colour to dark grey
     And I wait for a few seconds
     Then the dashboard background should be dark grey
     When I close the style editor
     And I wait for a few seconds
     Then the dashboard with name "Your Dashboard" should have css with a background of dark grey 
+
+  # TODO - create a step to populate the default dashboard with some widgets
+  @wip    
+  Scenario: Copy an existing Dashboard
+    Given a user has created an account
+    And they have logged in
+    When they click on the "copy dashboard" button
+    Then they should see the "copy dashboard" modal
+    When they fill in "name" with "My other analytics dashboard"
+    And they press "Create a copy"
+    Then there should be a dashboard with the name "My other analytics dashboard"
+    And they should see "My other analytics dashboard"
